@@ -1,5 +1,4 @@
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -8,8 +7,8 @@ final log = Logger('robust_websocket');
 
 class RobustWebsocket with ChangeNotifier {
   Future<void> _reconnect() async {
-    log.warning('websocket close code ${_channel!.closeCode}');
-    log.warning('websocket close reason ${_channel!.closeReason}');
+    log.warning('websocket close code ${_ws!.closeCode}');
+    log.warning('websocket close reason ${_ws!.closeReason}');
 
     isAlive = false;
     notifyListeners();
@@ -26,31 +25,57 @@ class RobustWebsocket with ChangeNotifier {
   bool isAlive = false;
   void Function(String) onData;
 
-  IOWebSocketChannel? _channel;
+  WebSocket? _ws;
 
-  void _connect() {
-    log.info('Connecting to server');
+  Future<void> _connect() async {
+    log.info('Connecting to server...');
 
-    _channel = IOWebSocketChannel.connect(Uri.parse('ws://192.168.1.113/ws'),
-            pingInterval: const Duration(milliseconds: 500));
-    _channel!.stream.listen((data) {
+    Socket? socket;
+    while (socket == null) {
+      try {
+        final client = HttpClient();
+        client.connectionTimeout = const Duration(seconds: 5);
+        final request =
+            await client.openUrl('GET', Uri.parse('http://192.168.1.113/ws'));
+
+        request.headers
+          ..set('Connection', 'Upgrade')
+          ..set('Upgrade', 'websocket')
+          ..set('Sec-WebSocket-Key', 'x3JJHMbDL1EzLkh9GBhXDw==')
+          ..set('Sec-WebSocket-Version', '13');
+
+        final response = await request.close();
+        socket = await response.detachSocket();
+      } catch (err) {
+        log.warning('Failed to connect to server, retrying...');
+        log.warning('$err');
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+
+    log.info('Connected to server');
+
+    isAlive = true;
+    notifyListeners();
+
+    _ws = WebSocket.fromUpgradedSocket(socket, serverSide: false);
+
+    _ws!.listen((data) {
       onData(data);
-
-      isAlive = true;
-      notifyListeners();
     }, onError: (Object e) {
-      final ex = e as WebSocketChannelException;
-      log.warning('websocket error: ${ex.message}');
+      log.warning('websocket error: $e');
     }, onDone: _reconnect);
+
+    _ws!.pingInterval = const Duration(seconds: 1);
   }
 
   void sendMessage(String s) {
-    _channel?.sink.add(s);
+    _ws?.add(s);
   }
 
   @override
   void dispose() {
-    _channel?.sink.close();
+    _ws?.close(1001);
     super.dispose();
   }
 }
