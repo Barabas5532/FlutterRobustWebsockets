@@ -22,8 +22,9 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => Counter()),
         ChangeNotifierProvider(create: (_) => WebsocketData()),
-        ChangeNotifierProvider(create: (context) => RobustWebsocket(
-                        onData: context.read<WebsocketData>().onData)),
+        ChangeNotifierProvider(
+            create: (context) =>
+                RobustWebsocket(onData: context.read<WebsocketData>().onData)),
       ],
       child: const MyApp(),
     ),
@@ -130,10 +131,10 @@ class Count extends StatelessWidget {
 }
 
 class WebsocketData with ChangeNotifier {
-    String data = '';
+  String data = '';
 
-    void onData(String data) {
-        this.data = data;
-        notifyListeners();
-    }
+  void onData(String data) {
+    this.data = data;
+    notifyListeners();
+  }
 }
