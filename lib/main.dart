@@ -2,16 +2,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:logging/logging.dart';
+
+import 'robust_websocket.dart';
 
 /// This is a reimplementation of the default Flutter application using provider + [ChangeNotifier].
 
 void main() {
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
+
   runApp(
     /// Providers are above [MyApp] instead of inside it, so that tests
     /// can use [MyApp] while mocking the providers
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => Counter()),
+        ChangeNotifierProvider(create: (_) => RobustWebsocket()),
       ],
       child: const MyApp(),
     ),
@@ -62,15 +72,17 @@ class MyHomePage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            Text('You have pushed the button this many times:'),
+          children: <Widget>[
+            const Text('You have pushed the button this many times:'),
 
             /// Extracted as a separate widget for performance optimization.
             /// As a separate widget, it will rebuild independently from [MyHomePage].
             ///
             /// This is totally optional (and rarely needed).
             /// Similarly, we could also use [Consumer] or [Selector].
-            Count(),
+            const Count(),
+            const Text('Last message from server:'),
+            Text(context.watch<RobustWebsocket>().lastMessage),
           ],
         ),
       ),
@@ -79,7 +91,12 @@ class MyHomePage extends StatelessWidget {
 
         /// Calls `context.read` instead of `context.watch` so that it does not rebuild
         /// when [Counter] changes.
-        onPressed: () => context.read<Counter>().increment(),
+        onPressed: () {
+          context.read<Counter>().increment();
+          context
+              .read<RobustWebsocket>()
+              .sendMessage('${context.read<Counter>().count}');
+        },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
