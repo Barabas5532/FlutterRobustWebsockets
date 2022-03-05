@@ -83,6 +83,15 @@ class MyHomePage extends StatelessWidget {
             const Count(),
             const Text('Last message from server:'),
             Text(context.watch<RobustWebsocket>().lastMessage),
+            const Text('Connection status:'),
+            Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                    color: context.read<RobustWebsocket>().isAlive
+                        ? Colors.green
+                        : Colors.red,
+                    shape: BoxShape.circle)),
           ],
         ),
       ),

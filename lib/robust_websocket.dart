@@ -8,7 +8,9 @@ final log = Logger('robust_websocket');
 class RobustWebsocket with ChangeNotifier {
   RobustWebsocket() {
     _channel.stream.listen((data) {
+      // TODO call a user supplied callback here to replace lastMessage
       lastMessage = data;
+      isAlive = true;
       notifyListeners();
     }, onError: (Object e) {
       final ex = e as WebSocketChannelException;
@@ -16,10 +18,13 @@ class RobustWebsocket with ChangeNotifier {
     }, onDone: () {
       log.warning('websocket close code ${_channel.closeCode}');
       log.warning('websocket close reason ${_channel.closeReason}');
+      isAlive = false;
+      notifyListeners();
     });
   }
 
   String lastMessage = '';
+  bool isAlive = false;
 
   final _channel = WebSocketChannel.connect(
     Uri.parse('ws://192.168.1.113/ws'),
