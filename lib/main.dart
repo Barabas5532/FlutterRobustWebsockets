@@ -21,7 +21,9 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => Counter()),
-        ChangeNotifierProvider(create: (_) => RobustWebsocket()),
+        ChangeNotifierProvider(create: (_) => WebsocketData()),
+        ChangeNotifierProvider(create: (context) => RobustWebsocket(
+                        onData: context.read<WebsocketData>().onData)),
       ],
       child: const MyApp(),
     ),
@@ -82,13 +84,13 @@ class MyHomePage extends StatelessWidget {
             /// Similarly, we could also use [Consumer] or [Selector].
             const Count(),
             const Text('Last message from server:'),
-            Text(context.watch<RobustWebsocket>().lastMessage),
+            Text(context.watch<WebsocketData>().data),
             const Text('Connection status:'),
             Container(
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                    color: context.read<RobustWebsocket>().isAlive
+                    color: context.watch<RobustWebsocket>().isAlive
                         ? Colors.green
                         : Colors.red,
                     shape: BoxShape.circle)),
@@ -125,4 +127,13 @@ class Count extends StatelessWidget {
         key: const Key('counterState'),
         style: Theme.of(context).textTheme.headline4);
   }
+}
+
+class WebsocketData with ChangeNotifier {
+    String data = '';
+
+    void onData(String data) {
+        this.data = data;
+        notifyListeners();
+    }
 }
