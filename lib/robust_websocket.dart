@@ -18,10 +18,11 @@ class RobustWebsocket with ChangeNotifier {
     _connect();
   }
 
-  RobustWebsocket({required this.onData}) {
+  RobustWebsocket({required this.onData, required this.uri}) {
     _connect();
   }
 
+  Uri uri;
   bool isAlive = false;
   void Function(String) onData;
 
@@ -35,8 +36,7 @@ class RobustWebsocket with ChangeNotifier {
       try {
         final client = HttpClient();
         client.connectionTimeout = const Duration(seconds: 5);
-        final request =
-            await client.openUrl('GET', Uri.parse('http://192.168.1.113/ws'));
+        final request = await client.openUrl('GET', uri);
 
         request.headers
           ..set('Connection', 'Upgrade')

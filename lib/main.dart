@@ -23,8 +23,9 @@ void main() {
         ChangeNotifierProvider(create: (_) => Counter()),
         ChangeNotifierProvider(create: (_) => WebsocketData()),
         ChangeNotifierProvider(
-            create: (context) =>
-                RobustWebsocket(onData: context.read<WebsocketData>().onData)),
+            create: (context) => RobustWebsocket(
+                onData: context.read<WebsocketData>().onData,
+                uri: Uri.parse('http://192.168.1.218/ws'))),
       ],
       child: const MyApp(),
     ),
