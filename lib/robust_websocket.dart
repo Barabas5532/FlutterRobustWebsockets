@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -38,10 +40,18 @@ class RobustWebsocket with ChangeNotifier {
         client.connectionTimeout = const Duration(seconds: 5);
         final request = await client.openUrl('GET', uri);
 
+        var nonce = <int>[];
+        final rand = Random();
+
+        for (int i = 0; i < 16; i++)
+        {
+            nonce.add(rand.nextInt(255));
+        }
+
         request.headers
           ..set('Connection', 'Upgrade')
           ..set('Upgrade', 'websocket')
-          ..set('Sec-WebSocket-Key', 'x3JJHMbDL1EzLkh9GBhXDw==')
+          ..set('Sec-WebSocket-Key', base64.encode(nonce))
           ..set('Sec-WebSocket-Version', '13');
 
         final response = await request.close();
